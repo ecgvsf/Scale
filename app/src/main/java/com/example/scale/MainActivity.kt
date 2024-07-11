@@ -7,9 +7,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.clickable
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material3.Typography
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,12 +32,21 @@ import java.lang.Math.toRadians
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.res.ResourcesCompat
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WeightPickerApp()
+            ScaleTheme {
+                WeightPickerApp()
+            }
         }
     }
 }
@@ -42,9 +54,9 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun WeightPickerApp() {
-    var weight by remember { mutableFloatStateOf(60f) }
+    var weight by remember { mutableFloatStateOf(-19f) }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -55,12 +67,28 @@ fun WeightPickerApp() {
             WeightPicker(
                 weight = weight,
                 onWeightChange = { newWeight ->
-                    weight = newWeight.coerceIn(0f, 150f)
+                    weight = newWeight.coerceIn(-150f, 0f)
                 }
             )
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+fun ScaleTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        typography = Typography(
+            displaySmall = TextStyle(
+                fontFamily = FontFamily(
+                    Font(R.font.comfortaa, FontWeight.Normal)
+                ),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold
+            ),
+        ),
+        content = content
+    )
 }
 
 @Composable
@@ -71,10 +99,10 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
     val needleBigRadius = 26f
     val needleSmallRadius = 12f
     val markerLength = 20f
-    val textRadius = innerRadius / 2
+    //val textRadius = innerRadius / 2
 
-    var offsetX by remember { mutableFloatStateOf(0f) }
     var rotationAngle by remember { mutableFloatStateOf(-19f) }
+    val customFont = ResourcesCompat.getFont(LocalContext.current, R.font.comfortaa)
 
     Box(
         modifier = Modifier
@@ -84,20 +112,15 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
                     // Coefficient to slow down the drag
                     val dragCoefficient = 0.2f
 
-                    // Update offsetX based on drag amount and coefficient
-                    offsetX += dragAmount * dragCoefficient
+                    // Update rotationAngle based on drag amount and coefficient
+                    rotationAngle += dragAmount * dragCoefficient / 2.4f
 
-                    // Calculate rotation angle based on offsetX
-                    rotationAngle = (offsetX / 2.4f).coerceIn(-150f, 0f)
+                    // Clamp rotationAngle to its limits
+                    rotationAngle = rotationAngle.coerceIn(-150f, 0f)
 
                     // Calculate new weight (maximum 160)
                     val newWeight = (rotationAngle * (160 / 150f)).coerceIn(0f, 160f)
                     onWeightChange(newWeight)
-
-                    // Prevent further increase of offsetX if rotationAngle is at its limit
-                    if (rotationAngle == -150f || rotationAngle == 0f) {
-                        offsetX = rotationAngle * 2.4f
-                    }
 
                     change.consume()
                 }
@@ -108,21 +131,21 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
 
             // Draw the outer circle
             drawCircle(
-                color = Color.LightGray,
+                color = Color.DarkGray,
                 radius = outerRadius,
                 center = center
             )
 
             // Draw the middle circle
             drawCircle(
-                color = Color(0xFF1E88E5), // Light blue
+                color = Color(0xFFFF9800), // Light orange
                 radius = middleRadius,
                 center = center
             )
 
             // Draw the inner circle
             drawCircle(
-                color = Color(0xFF1565C0), // Darker blue
+                color = Color(0xFFDF6310), // Darker orange
                 radius = innerRadius,
                 center = center
             )
@@ -184,6 +207,7 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
                     this.textSize = 52f
                     color = android.graphics.Color.WHITE
                     textAlign = Paint.Align.CENTER
+                    typeface = customFont
                 }
 
                 val text = "0 10 20 30 40 50 60 70 80 90 100 110 120 130 140 150"
@@ -198,8 +222,8 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
                 words.forEachIndexed { index, word ->
                     val angle = initialRotationAngle + angleStepText * index
                     val angleRad = Math.toRadians(angle.toDouble())
-                    val x = (center.x + (innerRadius - 130) * Math.cos(angleRad)).toFloat()
-                    val y = (center.y + (innerRadius - 150) * Math.sin(angleRad)).toFloat()
+                    val x = (center.x + (innerRadius - 130) * cos(angleRad)).toFloat()
+                    val y = (center.y + (innerRadius - 150) * sin(angleRad)).toFloat()
 
                     // Rotate the canvas
                     drawContext.canvas.nativeCanvas.save()
@@ -214,12 +238,12 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
             }
 
             // Draw the fixed needle
-            val needleAngle = 270f
+            //val needleAngle = 270f
             val needleLength = (innerRadius / 2) - 10
-            val needleEnd = Offset(
-                x = center.x + needleLength * cos(toRadians(needleAngle.toDouble())).toFloat(),
-                y = center.y + needleLength * sin(toRadians(needleAngle.toDouble())).toFloat()
-            )
+            //val needleEnd = Offset(
+            //    x = center.x + needleLength * cos(toRadians(needleAngle.toDouble())).toFloat(),
+            //    y = center.y + needleLength * sin(toRadians(needleAngle.toDouble())).toFloat()
+            //)
             drawCircle(
                 color = Color.Black,
                 radius = needleBigRadius,
@@ -252,6 +276,7 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
                 this.textSize = 64f
                 color = android.graphics.Color.WHITE
                 textAlign = Paint.Align.CENTER
+                typeface = customFont
             }
 
             val textWidth = textPaint.measureText(text)
@@ -264,7 +289,7 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
             val rectBottom = center.y + (textHeight / 2) + 225
 
             drawRoundRect(
-                color = Color(0xFF1E88E5),
+                color = Color(0xFFFF9800),
                 topLeft = Offset(rectLeft, rectTop),
                 size = Size(rectRight - rectLeft, rectBottom - rectTop),
                 cornerRadius = CornerRadius(100f)
@@ -282,38 +307,58 @@ fun WeightPicker(weight: Float, onWeightChange: (Float) -> Unit) {
         // Draw buttons inside the circle
         val buttonRadius = 60f
 
-        Button(
+        MyButton(
             modifier = Modifier
                 .size(buttonRadius.dp)
-                .offset(x = 80.dp, y = 180.dp)
-                .clickable { onWeightChange((((weight - 5)/ 5).roundToInt() * 5f).coerceIn(0f, 150f)) },
-            text = "-5"
+                .offset(x = 80.dp, y = 180.dp),
+            text = "-5",
+            onClick = {
+                if (rotationAngle < 0f) {
+                    rotationAngle =
+                        ((((rotationAngle * (160f / 150f)).coerceIn(-160f, 0f) + 5) / 5).roundToInt() * 5f) * (150f / 160f)
+                }
+            }
         )
 
-        Button(
+        MyButton(
             modifier = Modifier
                 .size(buttonRadius.dp)
-                .offset(x = (220).dp, y = 180.dp)
-                .clickable { onWeightChange((((weight + 5)/ 5).roundToInt() * 5f).coerceIn(0f, 150f)) },
-            text = "+5"
+                .offset(x = (220).dp, y = 180.dp),
+            text = "+5",
+            onClick = {
+                if (rotationAngle > -150f) {
+                    rotationAngle =
+                        ((((rotationAngle * (160f / 150f)).coerceIn(-160f, 0f) - 5) / 5).roundToInt() * 5f) * (150f / 160f)
+                }
+            }
         )
     }
 }
 
 @Composable
-fun Button(modifier: Modifier = Modifier, text: String) {
+fun MyButton(modifier: Modifier = Modifier, text: String, onClick: () -> Unit) {
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        onClick()
+                    }
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
-                color = Color(0xFF1E88E5),
+                color = Color(0xFFFF9800),
                 radius = size.minDimension / 2
             )
         }
 
         Text(
+            fontFamily = FontFamily(
+                Font(R.font.comfortaa, FontWeight.Normal)
+            ),
             text = text,
             color = Color.White,
             fontSize = 20.sp
