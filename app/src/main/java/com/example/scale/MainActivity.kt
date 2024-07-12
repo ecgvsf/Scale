@@ -71,6 +71,16 @@ fun WeightPickerApp() {
                 }
             )
             Spacer(modifier = Modifier.height(32.dp))
+            MyButton(
+                modifier = Modifier
+                    .size(60.dp)
+                    .offset(x = 0.dp, y = (30).dp),
+                text = "✓",
+                onClick = {
+                    //val intent = Intent(this@MainActivity, SecondActivity::class.java)
+                    //startActivity(intent)
+                }
+            )
         }
     }
 }
